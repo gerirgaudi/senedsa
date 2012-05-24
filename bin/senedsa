@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby -w
+
+lib = File.expand_path(File.dirname(__FILE__) + '/../lib')
+$LOAD_PATH.unshift(lib) if File.directory?(lib) && !$LOAD_PATH.include?(lib)
+
+require 'senedsa'
+
+module Senedsa
+
+  app = CLI.new(ARGV)
+  app.run
+
+end
