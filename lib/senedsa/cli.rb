@@ -1,5 +1,6 @@
 require 'optparse'
 require 'yaml'
+require 'awesome_print'
 
 module Senedsa
 
@@ -12,16 +13,17 @@ module Senedsa
 
     def initialize(arguments)
       @arguments = arguments
-      @options = { :debug => false }
+      @cli_options = { :senedsa_config => CFGFILE, :debug => false }
+      @options = {}
     end
 
     def run
       begin
-        configuration_file?(CFGFILE)
         parsed_options?
+        config_options?
         arguments_valid?
         options_valid?
-      rescue ArgumentError, OptionParser::MissingArgument => e
+      rescue ArgumentError, OptionParser::MissingArgument, StandardError => e
         output_message e.message, 1
       end
       process_options
@@ -30,41 +32,39 @@ module Senedsa
     end
 
     protected
-
-      def configuration_file?(cfg_file)
-        begin
-          if File.readable? cfg_file
-            cfg_options = YAML.load File.open(cfg_file)
-            @options.merge!(cfg_options) unless cfg_options.nil?
-          end
-        rescue Psych::SyntaxError => e
-          output_error "syntax error in configuration file #{cfg_file}: #{e.message}", 1
-        end
-        true
-      end
-
       def parsed_options?
         begin
           opts = OptionParser.new
 
           opts.banner = "Usage: #{ID} [options] svc_output"
           opts.separator ""
-          opts.separator "Specific options:"
-          opts.version = VERSION
 
-          opts.on('-H', '--nsca NSCA_HOSTNAME', String,                 "NSCA server hostname")                        { |nsca_hostname| @options[:nsca_hostname] = nsca_hostname }
-          opts.on('-p', '--port NSCA_PORT',     Integer,                "NSCA server port")                            { |nsca_port| @options[:nsca_port] = nsca_port}
-          opts.on('-t', '--timeout TIMEOUT',    Integer,                "send_nsca connection timeout")                { |timeout| @options[:timeout] = timeout }
-          opts.on('-d', '--delim DELIM',        String,                 "send_nsca field delimited")                   { |delim| @options[:delim] = delim }
-          opts.on('-b', '--binary BINARY',      String,                 "send_nsca binary path")                       { |binary| @options[:binary] = binary }
-          opts.on('-c', '--config CONFIG',      String,                 "send_nsca configuration file")                { |config| @options[:config] = config }
-          opts.on('-h', '--hostname HOSTNAME',  String,                 "service hostname")                            { |hostname| @options[:hostname] = hostname }
-          opts.on('-S', '--service SVC_DESCR',  String,                 "service description")                         { |svc_descr| @options[:svc_descr] = svc_descr }
-          opts.on('-s', '--status STATUS',      SendNsca::STATUS.keys,  "Status: #{SendNsca::STATUS.keys.join ' '}")   { |status| @options[:rt] = status }
+          opts.separator "Senedsa options"
+          opts.on('-C', '--config CONFIG',               String,                 "senedsa configuration file")                         { |config|    @cli_options[:senedsa_config] = config }
+          opts.separator ""
 
-          opts.on('-a', '--about',                                      "Display #{ID} information")                   { output_message ABOUT, 0 }
-          opts.on('-V', '--version',                                    "Display #{ID} version")                       { output_message VERSION, 0 }
-          opts.on_tail('--help', "Show this message")                                                                  { output_message opts; exit 0 }
+          opts.separator "NSCA options:"
+          opts.on('-H', '--nsca_hostname HOSTNAME',      String,                 "NSCA server hostname")                               { |hostname|  @cli_options[:nsca_hostname] = hostname }
+          opts.on('-p', '--nsca_port PORT',              Integer,                "NSCA server port")                                   { |port|      @cli_options[:nsca_port] = port }
+          opts.separator ""
+
+          opts.separator "Send_Nsca options:"
+          opts.on('-t', '--send_nsca-timeout TIMEOUT',   Integer,                "send_nsca connection timeout")                       { |timeout|   @cli_options[:send_nsca_timeout] = timeout }
+          opts.on('-d', '--send_nsca-delim DELIM',       String,                 "send_nsca field delimited")                          { |delim|     @cli_options[:send_nsca_delim] = delim }
+          opts.on('-c', '--send_nsca-config CONFIG',     String,                 "send_nsca configuration file")                       { |config|    @cli_options[:send_nsca_config] = config }
+          opts.on('-b', '--send_nsca-binary BINARY',     String,                 "send_nsca binary path")                              { |binary|    @cli_options[:send_nsca_binary] = binary }
+          opts.separator ""
+
+          opts.separator "Service options:"
+          opts.on('-h', '--hostname HOSTNAME',           String,                 "service hostname")                                   { |hostname|  @cli_options[:svc_hostname] = hostname }
+          opts.on('-S', '--service SVC_DESCR',           String,                 "service description")                                { |svc_descr| @cli_options[:svc_descr] = svc_descr }
+          opts.on('-s', '--status STATUS',               SendNsca::STATUS.keys,  "service status: #{SendNsca::STATUS.keys.join ', '}") { |status|    @cli_options[:svc_status] = status }
+          opts.separator ""
+
+          opts.separator "General options:"
+          opts.on('-a', '--about',                                               "Display #{ID} information")                          { output_message ABOUT, 0 }
+          opts.on('-V', '--version',                                             "Display #{ID} version")                              { output_message VERSION, 0 }
+          opts.on_tail('--help',                                                 "Show this message")                                  { output_message opts; exit 0 }
 
           output_message opts, 0 if @arguments.size == 0
 
@@ -72,13 +72,16 @@ module Senedsa
         rescue => e
           output_message e.message, 1
         end
-        process_options
+      end
+
+      def config_options?
+        cfg_options = SendNsca.configure(@cli_options[:senedsa_config])
+        raise
+        cfg_options.delete(:senedsa_config) unless cfg_options[:senedsa_config].nil?
+        @options.merge!(cfg_options)
       end
 
       def options_valid?
-        raise OptionParser::MissingArgument, "NSCA hostname (-H) must be specified" if @options[:nsca_hostname].nil?
-        raise OptionParser::MissingArgument, "service description (-S) must be specified" if @options[:svc_descr].nil?
-        raise OptionParser::MissingArgument, "service hostname (-h) must be specified" if @options[:hostname].nil?
         true
       end
 
@@ -88,7 +91,11 @@ module Senedsa
       end
 
       def process_options
-        true
+        @options.merge!(@cli_options)
+        raise OptionParser::MissingArgument, "NSCA hostname (-H) must be specified" if @options[:nsca_hostname].nil?
+        raise OptionParser::MissingArgument, "service description (-S) must be specified" if @options[:svc_descr].nil?
+        raise OptionParser::MissingArgument, "service hostname (-h) must be specified" if @options[:svc_hostname].nil?
+        raise OptionParser::MissingArgument, "service status (-s) must be specified" if @options[:svc_status].nil?
       end
 
       def process_arguments
@@ -96,15 +103,15 @@ module Senedsa
       end
 
       def output_message(message, exitstatus=nil)
-        m = (! exitstatus.nil? and exitstatus > 1) ? "%s error: %s\n" % [ID, message] : message
+        m = (! exitstatus.nil? and exitstatus > 0) ? "%s: error: %s" % [ID, message] : message
         $stderr.write "#{m}\n"
         exit exitstatus unless exitstatus.nil?
       end
 
       def process_command
         begin
-          @send_nsca = SendNsca.new @options[:hostname], @options[:svc_descr], :nsca_hostname => @options[:nsca_hostname]
-          @send_nsca.send(@options[:rt],@arguments)
+          @send_nsca = SendNsca.new @options[:svc_hostname], @options[:svc_descr], @options
+          @send_nsca.send(@options[:svc_status],@arguments)
         rescue => e
           output_message e.message, 1
         end

@@ -12,69 +12,74 @@ module Senedsa
         :unknown  => 3
     }
 
-    @send_nsca = OpenStruct.new
-    @send_nsca.binary = 'send_nsca'
-    @send_nsca.config = nil
-    @send_nsca.delim = '\t'
-    @send_nsca.to = 10
-    @send_nsca.debug = false
+    @defaults = {
+        :send_nsca_binary => 'send_nsca',
+        :send_nsca_config => nil,
+        :send_nsca_delim => '\t',
+        :send_nsca_timeout => 10,
+        :nsca_hostname => nil,
+        :nsca_port => 5667,
+        :svc_hostname => nil,
+        :svc_descr => nil,
+        :svc_status => nil
+    }
 
-    @nsca = OpenStruct.new
-    @nsca.hostname = nil
-    @nsca.port = 5667
+    class << self
 
-    class << self; attr_accessor :send_nsca, :nsca end
+      attr_accessor :defaults end
+
+      def self.configure(cfg_file)
+        begin
+          cfg_options = YAML.load File.open(cfg_file)
+          raise ConfigurationError, "senedsa_config not allowed in configuration file (#{cfg_file})" unless cfg_options[:senedsa_config].nil?
+        rescue Psych::SyntaxError => e
+          raise StandardError, "syntax error in configuration file #{cfg_file}: #{e.message}"
+        rescue Errno::ENOENT, Errno::EACCES => e
+          raise StandardError, e.message
+        end
+        cfg_options
+      end
 
     attr_accessor :send_nsca, :nsca
 
     class Error < StandardError; end
     class SendNscaError < Error; end
+    class ConfigurationError < SendNscaError; end
 
-    def initialize(hostname,svc_descr,opts)
-      @hostname = hostname
-      @svc_descr = svc_descr
-
-      @send_nsca = OpenStruct.new
-      @send_nsca.binary = opts[:binary] ? opts[:binary] : SendNsca.send_nsca.binnary
-      @send_nsca.cfg = opts[:cfg] ? opts[:cfg] : SendNsca.send_nsca.cfg
-      @send_nsca.delim = opts[:delim] ? opts[:delim] : SendNsca.send_nsca.delim
-      @send_nsca.to = opts[:to] ? opts[:to] : SendNsca.send_nsca.to
-      @send_nsca.command = nil
-
-      @nsca = OpenStruct.new
-      @nsca.hostname = opts[:nsca_hostname] ? opts[:nsca_hostname] : SendNsca.nsca.hostname
-      @nsca.port = opts[:nsca_port] ? opts[:nsca_port] : SendNsca.nsca.port
+    def initialize(svc_hostname,svc_descr,options)
+      @options = options.nil? ? SendNsca.defaults : SendNsca.defaults.merge(options)
+      @options[:svc_hostname] = svc_hostname
+      @options[:svc_descr] = svc_descr
     end
 
-    def send(rt,svc_output)
-      build_command_line
-      run_command(rt,svc_output)
+    SendNsca.defaults.keys.each do |attr|
+      define_method(attr.to_s) { @options[attr.to_sym] }
+      define_method(attr.to_s + '=') { |value| @options[attr.to_sym] = value }
+    end
+
+    def send(status,svc_output)
+      run(status,svc_output)
     end
 
     private
 
-      def build_command_line
-        c = "#{@send_nsca.binary} -H #{@nsca.hostname}"
-        c << " -p #{@nsca.port}" unless @nsca.port.nil?
-        c << " -c #{@send_nsca.cfg}" unless @send_nsca.cfg.nil?
-        c += " -d '#{@send_nsca.delim}'"
-        c << " -t #{@send_nsca.to}"
-
-        @send_nsca.command = c
+      def command
+        c = "#{send_nsca_binary} -H #{nsca_hostname} -p #{nsca_port} -t #{send_nsca_timeout} -d '#{send_nsca_delim}'"
+        c << " -c #{send_nsca_config}" unless send_nsca_config.nil?
+        c
       end
 
-    def run_command(rt,svc_output)
-      begin
-        Open3.popen3(@send_nsca.command) do |stdin, stdout, stderr, wait_thr|
-          stdin.write("%s\n" % [@hostname,@svc_descr,STATUS[rt],svc_output].join(@send_nsca.delim))
-          $stdout.write stdout.gets
-          raise SendNscaError, stderr.gets.chomp unless wait_thr.value.exitstatus == 0
+      def run(status,svc_output)
+        begin
+          Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
+            stdin.write("%s\n" % [svc_hostname,svc_descr,STATUS[status],svc_output].join(send_nsca_delim))
+            $stdout.write stdout.gets
+            raise SendNscaError, stderr.gets.chomp unless wait_thr.value.exitstatus == 0
+          end
+        rescue Errno::ENOENT, Errno::EACCES => e
+          raise SendNscaError, e.message
         end
-      rescue Errno::ENOENT, Errno::EACCES => e
-        raise SendNscaError, e.message
       end
-    end
-
   end
-
 end
+
