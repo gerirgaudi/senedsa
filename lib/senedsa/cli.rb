@@ -22,7 +22,7 @@ module Senedsa
         arguments_valid?
         options_valid?
       rescue ArgumentError, OptionParser::MissingArgument => e
-        output_error e.message, 1
+        output_message e.message, 1
       end
       process_options
       process_arguments
@@ -52,7 +52,6 @@ module Senedsa
           opts.separator "Specific options:"
           opts.version = VERSION
 
-          opts.on('-V', '--version',                                    "Display #{ID} version")                       { puts VERSION ; exit 0 }
           opts.on('-H', '--nsca NSCA_HOSTNAME', String,                 "NSCA server hostname")                        { |nsca_hostname| @options[:nsca_hostname] = nsca_hostname }
           opts.on('-p', '--port NSCA_PORT',     Integer,                "NSCA server port")                            { |nsca_port| @options[:nsca_port] = nsca_port}
           opts.on('-t', '--timeout TIMEOUT',    Integer,                "send_nsca connection timeout")                { |timeout| @options[:timeout] = timeout }
@@ -63,16 +62,15 @@ module Senedsa
           opts.on('-S', '--service SVC_DESCR',  String,                 "service description")                         { |svc_descr| @options[:svc_descr] = svc_descr }
           opts.on('-s', '--status STATUS',      SendNsca::STATUS.keys,  "Status: #{SendNsca::STATUS.keys.join ' '}")   { |status| @options[:rt] = status }
 
-          opts.on_tail('--help', "Show this message")                                                                  { puts opts; exit 0 }
+          opts.on('-a', '--about',                                      "Display #{ID} information")                   { output_message ABOUT, 0 }
+          opts.on('-V', '--version',                                    "Display #{ID} version")                       { output_message VERSION, 0 }
+          opts.on_tail('--help', "Show this message")                                                                  { output_message opts; exit 0 }
 
-          if @arguments.size == 0
-            puts opts
-            exit 0
-          end
+          output_message opts, 0 if @arguments.size == 0
 
           opts.parse!(@arguments)
         rescue => e
-          output_error e.message, 1
+          output_message e.message, 1
         end
         process_options
       end
@@ -97,9 +95,10 @@ module Senedsa
         @arguments = @arguments.join(' ')
       end
 
-      def output_error(message,exitstatus = nil)
-        $stderr.write "#{ID}: error: #{message}\n"
-        exit exitstatus[0] unless exitstatus.nil?
+      def output_message(message, exitstatus=nil)
+        m = (! exitstatus.nil? and exitstatus > 1) ? "%s error: %s\n" % [ID, message] : message
+        $stderr.write "#{m}\n"
+        exit exitstatus unless exitstatus.nil?
       end
 
       def process_command
@@ -107,7 +106,7 @@ module Senedsa
           @send_nsca = SendNsca.new @options[:hostname], @options[:svc_descr], :nsca_hostname => @options[:nsca_hostname]
           @send_nsca.send(@options[:rt],@arguments)
         rescue => e
-          output_error e.message, 1
+          output_message e.message, 1
         end
         exit 0
       end
