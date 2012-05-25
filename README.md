@@ -46,7 +46,7 @@ Thus, we can now run `senedsa` like so:
 
     senedsa -h myhost.example.com -S mypassiveservice -s ok Everthing ok with myservice
     
-In extreme cases, where `senedsa is being used by some external script for a specific host and service (assume `send_nsca` is in the PATH and the configuration is its standard location), the configuration file `/etc/senedsa.foo` could be:
+In extreme cases, where `senedsa` is being used by some external script for a specific host and service (assume `send_nsca` is in the PATH and the configuration is its standard location), the configuration file `/etc/senedsa.foo` could be:
 
 	---
 	:nsca_hostname: nsca.example.com
