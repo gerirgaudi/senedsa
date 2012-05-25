@@ -52,12 +52,12 @@ module Senedsa
           opts.separator "Specific options:"
           opts.version = VERSION
 
-          opts.on('-V', '--version')                                                                                   { puts VERSION ; exit 0 }
-          opts.on('-D', '--debug',                                      "Enable debug output")                         { @options.debug = true }
+          opts.on('-V', '--version',                                    "Display #{ID} version")                       { puts VERSION ; exit 0 }
           opts.on('-H', '--nsca NSCA_HOSTNAME', String,                 "NSCA server hostname")                        { |nsca_hostname| @options[:nsca_hostname] = nsca_hostname }
           opts.on('-p', '--port NSCA_PORT',     Integer,                "NSCA server port")                            { |nsca_port| @options[:nsca_port] = nsca_port}
           opts.on('-t', '--timeout TIMEOUT',    Integer,                "send_nsca connection timeout")                { |timeout| @options[:timeout] = timeout }
           opts.on('-d', '--delim DELIM',        String,                 "send_nsca field delimited")                   { |delim| @options[:delim] = delim }
+          opts.on('-b', '--binary BINARY',      String,                 "send_nsca binary path")                       { |binary| @options[:binary] = binary }
           opts.on('-c', '--config CONFIG',      String,                 "send_nsca configuration file")                { |config| @options[:config] = config }
           opts.on('-h', '--hostname HOSTNAME',  String,                 "service hostname")                            { |hostname| @options[:hostname] = hostname }
           opts.on('-S', '--service SVC_DESCR',  String,                 "service description")                         { |svc_descr| @options[:svc_descr] = svc_descr }

@@ -13,8 +13,8 @@ module Senedsa
     }
 
     @send_nsca = OpenStruct.new
-    @send_nsca.bin = 'send_nsca'
-    @send_nsca.cfg = nil
+    @send_nsca.binary = 'send_nsca'
+    @send_nsca.config = nil
     @send_nsca.delim = '\t'
     @send_nsca.to = 10
     @send_nsca.debug = false
@@ -35,7 +35,7 @@ module Senedsa
       @svc_descr = svc_descr
 
       @send_nsca = OpenStruct.new
-      @send_nsca.bin = opts[:bin] ? opts[:bin] : SendNsca.send_nsca.bin
+      @send_nsca.binary = opts[:binary] ? opts[:binary] : SendNsca.send_nsca.binnary
       @send_nsca.cfg = opts[:cfg] ? opts[:cfg] : SendNsca.send_nsca.cfg
       @send_nsca.delim = opts[:delim] ? opts[:delim] : SendNsca.send_nsca.delim
       @send_nsca.to = opts[:to] ? opts[:to] : SendNsca.send_nsca.to
@@ -54,7 +54,7 @@ module Senedsa
     private
 
       def build_command_line
-        c = "#{@send_nsca.bin} -H #{@nsca.hostname}"
+        c = "#{@send_nsca.binary} -H #{@nsca.hostname}"
         c << " -p #{@nsca.port}" unless @nsca.port.nil?
         c << " -c #{@send_nsca.cfg}" unless @send_nsca.cfg.nil?
         c += " -d '#{@send_nsca.delim}'"
