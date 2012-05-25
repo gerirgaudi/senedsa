@@ -1,10 +1,12 @@
 require 'optparse'
+require 'yaml'
 
 module Senedsa
 
   class CLI
 
     ID = File.basename($PROGRAM_NAME).to_sym
+    CFGFILE = File.join(ENV['HOME'],"/.#{ID}/config")
 
     attr_reader :options
 
@@ -15,9 +17,10 @@ module Senedsa
 
     def run
       begin
+        configuration_file?(CFGFILE)
         parsed_options?
-        options_valid?
         arguments_valid?
+        options_valid?
       rescue ArgumentError, OptionParser::MissingArgument => e
         output_error e.message, 1
       end
@@ -27,6 +30,18 @@ module Senedsa
     end
 
     protected
+
+      def configuration_file?(cfg_file)
+        begin
+          if File.readable? cfg_file
+            cfg_options = YAML.load File.open(cfg_file)
+            @options.merge!(cfg_options) unless cfg_options.nil?
+          end
+        rescue Psych::SyntaxError => e
+          output_error "syntax error in configuration file #{cfg_file}: #{e.message}", 1
+        end
+        true
+      end
 
       def parsed_options?
         begin
@@ -48,9 +63,12 @@ module Senedsa
           opts.on('-S', '--service SVC_DESCR',  String,                 "service description")                         { |svc_descr| @options[:svc_descr] = svc_descr }
           opts.on('-s', '--status STATUS',      SendNsca::STATUS.keys,  "Status: #{SendNsca::STATUS.keys.join ' '}")   { |status| @options[:rt] = status }
 
-          opts.on_tail('--help', "Show this message")                                                                  { puts opts; exit }
+          opts.on_tail('--help', "Show this message")                                                                  { puts opts; exit 0 }
 
-          puts opts; exit 0 if @arguments.size == 0
+          if @arguments.size == 0
+            puts opts
+            exit 0
+          end
 
           opts.parse!(@arguments)
         rescue => e
@@ -79,7 +97,7 @@ module Senedsa
         @arguments = @arguments.join(' ')
       end
 
-      def output_error(message,*exitstatus)
+      def output_error(message,exitstatus = nil)
         $stderr.write "#{ID}: error: #{message}\n"
         exit exitstatus[0] unless exitstatus.nil?
       end
