@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.platform                  = Gem::Platform::RUBY
   s.authors                   = "Gerardo López-Fernádez"
   s.email                     = 'gerir@evernote.com'
-  s.homepage                  = 'https://github.com/evernote/senedsa'
+  s.homepage                  = 'https://github.com/evernote/ops-senedsa'
   s.summary                   = "Utility and library wrapper for Nagios send_nsca utility"
   s.description               = "Senedsa is a small utility and library wrapper for the Nagios send_nsca."
   s.license                   = "Apache License, Version 2.0"
