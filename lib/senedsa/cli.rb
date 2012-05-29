@@ -1,6 +1,5 @@
 require 'optparse'
 require 'yaml'
-require 'awesome_print'
 
 module Senedsa
 

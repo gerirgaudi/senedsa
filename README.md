@@ -2,6 +2,8 @@
 
 *Senedsa* is a small utility and library that wraps around the Nagios `send_nsca` utility, which must be available in your system. *Senedsa* assumes by default that `send_nsca` is available in your PATH and that `send_nsca`'s configuration file is in its default location. Both of these items can be overriden via options in the configuration file or in the command line.
 
+*Senedsa* is available as a Rubygem: [gem install senedsa](https://rubygems.org/gems/senedsa "Senedsa")
+
 # SYNOPSIS
 
     senedsa [options] svc_output
