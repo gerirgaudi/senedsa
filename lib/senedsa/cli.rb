@@ -6,13 +6,13 @@ module Senedsa
   class CLI
 
     ID = File.basename($PROGRAM_NAME).to_sym
-    CFGFILE = File.join(ENV['HOME'],"/.#{ID}/config")
+    DEFAULT_CONFIG_FILE = File.join(ENV['HOME'],"/.#{ID}/config")
 
     attr_reader :options
 
     def initialize(arguments)
       @arguments = arguments
-      @cli_options = { :senedsa_config => CFGFILE, :debug => false }
+      @cli_options = { :debug => false }
       @options = {}
     end
 
@@ -22,12 +22,12 @@ module Senedsa
         config_options?
         arguments_valid?
         options_valid?
-      rescue ArgumentError, OptionParser::MissingArgument, StandardError => e
+        process_options
+        process_arguments
+        process_command
+      rescue ArgumentError, OptionParser::MissingArgument, SendNsca::ConfigurationError => e
         output_message e.message, 1
       end
-      process_options
-      process_arguments
-      process_command
     end
 
     protected
@@ -39,7 +39,7 @@ module Senedsa
           opts.separator ""
 
           opts.separator "Senedsa options"
-          opts.on('-C', '--config CONFIG',               String,                 "senedsa configuration file")                         { |config|    @cli_options[:senedsa_config] = config }
+          opts.on('-c', '--config CONFIG',               String,                 "senedsa configuration file")                         { |config|    @cli_options[:senedsa_config] = config }
           opts.separator ""
 
           opts.separator "NSCA options:"
@@ -48,10 +48,10 @@ module Senedsa
           opts.separator ""
 
           opts.separator "Send_Nsca options:"
-          opts.on('-t', '--send_nsca-timeout TIMEOUT',   Integer,                "send_nsca connection timeout")                       { |timeout|   @cli_options[:send_nsca_timeout] = timeout }
-          opts.on('-d', '--send_nsca-delim DELIM',       String,                 "send_nsca field delimited")                          { |delim|     @cli_options[:send_nsca_delim] = delim }
-          opts.on('-c', '--send_nsca-config CONFIG',     String,                 "send_nsca configuration file")                       { |config|    @cli_options[:send_nsca_config] = config }
-          opts.on('-b', '--send_nsca-binary BINARY',     String,                 "send_nsca binary path")                              { |binary|    @cli_options[:send_nsca_binary] = binary }
+          opts.on('-T', '--send_nsca-timeout TIMEOUT',   Integer,                "send_nsca connection timeout")                       { |timeout|   @cli_options[:send_nsca_timeout] = timeout }
+          opts.on('-D', '--send_nsca-delim DELIM',       String,                 "send_nsca field delimited")                          { |delim|     @cli_options[:send_nsca_delim] = delim }
+          opts.on('-C', '--send_nsca-config CONFIG',     String,                 "send_nsca configuration file")                       { |config|    @cli_options[:send_nsca_config] = config }
+          opts.on('-B', '--send_nsca-binary BINARY',     String,                 "send_nsca binary path")                              { |binary|    @cli_options[:send_nsca_binary] = binary }
           opts.separator ""
 
           opts.separator "Service options:"
@@ -61,9 +61,10 @@ module Senedsa
           opts.separator ""
 
           opts.separator "General options:"
+          opts.on('-d', '--debug',                                               "Enable debug mode")                                  { @cli_options[:debug] = true}
           opts.on('-a', '--about',                                               "Display #{ID} information")                          { output_message ABOUT, 0 }
           opts.on('-V', '--version',                                             "Display #{ID} version")                              { output_message VERSION, 0 }
-          opts.on_tail('--help',                                                 "Show this message")                                  { output_message opts; exit 0 }
+          opts.on_tail('--help',                                                 "Show this message")                                  { output_message opts 0 }
 
           output_message opts, 0 if @arguments.size == 0
 
@@ -74,10 +75,13 @@ module Senedsa
       end
 
       def config_options?
-        cfg_options = SendNsca.configure(@cli_options[:senedsa_config])
-        raise
-        cfg_options.delete(:senedsa_config) unless cfg_options[:senedsa_config].nil?
-        @options.merge!(cfg_options)
+        cfg_file = @cli_options[:senedsa_config] unless @cli_options[:senedsa_config].nil?
+        cfg_file = DEFAULT_CONFIG_FILE if @cli_options[:senedsa_config].nil? and File.readable? DEFAULT_CONFIG_FILE
+
+        unless cfg_file.nil?
+          @options.merge!(SendNsca.configure(cfg_file))
+          @options[:senedsa_config] = cfg_file
+        end
       end
 
       def options_valid?
@@ -98,7 +102,7 @@ module Senedsa
       end
 
       def process_arguments
-        @arguments = @arguments.join(' ')
+        @cli_options[:svc_output] = @arguments.join(' ')
       end
 
       def output_message(message, exitstatus=nil)
@@ -109,10 +113,13 @@ module Senedsa
 
       def process_command
         begin
-          @send_nsca = SendNsca.new @options[:svc_hostname], @options[:svc_descr], @options
-          @send_nsca.send(@options[:svc_status],@arguments)
+          SendNsca.new(@options).send
         rescue => e
-          output_message e.message, 1
+          if @options[:debug]
+            output_message "%s\n%s" % [e.message,e.backtrace.join("\n   ")], 1
+          else
+            output_message e.message,1
+          end
         end
         exit 0
       end
