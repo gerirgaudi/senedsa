@@ -82,7 +82,22 @@ module Senedsa
     end
 
     def send(*args)
-      run(@options[:status],@options[:svc_output])
+
+      case args.size
+        when 0
+          # svc_status and svc_output should be set on @options
+          raise ArgumentError, "svc_status or svc_output not set" if @options[:svc_status].nil? or @options[:svc_output].nil?
+          svc_status = @options[:status]
+          svc_output = @options[:svc_output]
+        when 2
+          raise ArgumentError, "invalid svc_status" unless args[0].is_a? Symbol and STATUS.keys.include?(args[0])
+          raise ArgumentError, "invalid svc_output" unless args[1].is_a? String
+          svc_status = args[0]
+          svc_output = args[1]
+        else
+          raise ArgumentError, "wrong number of arguments"
+      end
+      run svc_status, svc_output
     end
 
     SendNsca.defaults.keys.each do |attr|

@@ -102,7 +102,7 @@ module Senedsa
       end
 
       def process_arguments
-        @cli_options[:svc_output] = @arguments.join(' ')
+        @options[:svc_output] = @arguments.join(' ')
       end
 
       def output_message(message, exitstatus=nil)
