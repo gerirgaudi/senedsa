@@ -76,7 +76,7 @@ module Senedsa
           hsh_options = args[2].merge({ :svc_hostname => args[0], :svc_descr => args[1] })
 
         else
-          raise InitializationError, "invalid number of arguments"
+          raise ArgumentError, "wrong number of arguments"
       end
       @options = SendNsca.defaults.merge(cfg_options).merge(hsh_options)
     end
