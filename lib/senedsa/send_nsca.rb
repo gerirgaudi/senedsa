@@ -28,13 +28,17 @@ module Senedsa
       attr_accessor :defaults end
 
       def self.configure(cfg_file)
-        begin
-          cfg_options = YAML.load File.open(cfg_file)
-          raise ConfigurationError, "senedsa_config not allowed in configuration file (#{cfg_file})" unless cfg_options[:senedsa_config].nil?
-        rescue Psych::SyntaxError => e
-          raise StandardError, "syntax error in configuration file #{cfg_file}: #{e.message}"
-        rescue Errno::ENOENT, Errno::EACCES => e
-          raise StandardError, e.message
+        cfg_options = {}
+        unless cfg_file.nil?
+          raise ConfigurationError, "unable to read configuration file #{cfg_file}" unless File.readable? cfg_file
+          begin
+            cfg_options = YAML.load File.open(cfg_file)
+            raise ConfigurationError, "senedsa_config not allowed in configuration file (#{cfg_file})" unless cfg_options[:senedsa_config].nil?
+          rescue Psych::SyntaxError => e
+            raise ConfigurationError, "syntax error in configuration file #{cfg_file}: #{e.message}"
+          rescue Errno::ENOENT, Errno::EACCES => e
+           raise ConfigurationError, e.message
+          end
         end
         cfg_options
       end
@@ -44,20 +48,46 @@ module Senedsa
     class Error < StandardError; end
     class SendNscaError < Error; end
     class ConfigurationError < SendNscaError; end
+    class InitializationError < SendNscaError; end
 
-    def initialize(svc_hostname,svc_descr,options)
-      @options = options.nil? ? SendNsca.defaults : SendNsca.defaults.merge(options)
-      @options[:svc_hostname] = svc_hostname
-      @options[:svc_descr] = svc_descr
+    def initialize(*args)
+
+      case args.size
+
+        when 1
+          if args[0].is_a? String
+            cfg_options = SendNsca.configure(args[0])
+            hsh_options = {}
+          elsif args[0].is_a? Hash
+            cfg_options = SendNsca.configure(args[0][:senedsa_config])
+            hsh_options = args[0]
+          else
+            raise InitializationError, "invalid argument types"
+          end
+
+        when 2
+          raise InitializationError, "invalid argument types" unless args[0].is_a? String and args[1].is_a? String
+          cfg_options = SendNsca.configure(args[0][:senedsa_config])
+          hsh_options = { :svc_hostname => args[0], :svc_descr => args[1] }
+
+        when 3
+          raise InitializationError, "invalid argument types" unless args[0].is_a? String and args[1].is_a? String and args[2].is_a? Hash
+          cfg_options = SendNsca.configure(args[0][:senedsa_config])
+          hsh_options = args[2].merge({ :svc_hostname => args[0], :svc_descr => args[1] })
+
+        else
+          raise InitializationError, "invalid number of arguments"
+      end
+      @options = SendNsca.defaults.merge(cfg_options).merge(hsh_options)
+    end
+
+    def send(*args)
+      run(@options[:status],@options[:svc_output])
     end
 
     SendNsca.defaults.keys.each do |attr|
       define_method(attr.to_s) { @options[attr.to_sym] }
       define_method(attr.to_s + '=') { |value| @options[attr.to_sym] = value }
-    end
-
-    def send(status,svc_output)
-      run(status,svc_output)
     end
 
     private
