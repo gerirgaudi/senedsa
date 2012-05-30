@@ -44,7 +44,7 @@ module Senedsa
 
           opts.separator "NSCA options:"
           opts.on('-H', '--nsca_hostname HOSTNAME',      String,                 "NSCA server hostname")                               { |hostname|  @cli_options[:nsca_hostname] = hostname }
-          opts.on('-p', '--nsca_port PORT',              Integer,                "NSCA server port")                                   { |port|      @cli_options[:nsca_port] = port }
+          opts.on('-P', '--nsca_port PORT',              Integer,                "NSCA server port")                                   { |port|      @cli_options[:nsca_port] = port }
           opts.separator ""
 
           opts.separator "Send_Nsca options:"
