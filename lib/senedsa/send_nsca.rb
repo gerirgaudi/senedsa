@@ -34,7 +34,7 @@ module Senedsa
           begin
             cfg_options = YAML.load File.open(cfg_file)
             raise ConfigurationError, "senedsa_config not allowed in configuration file (#{cfg_file})" unless cfg_options[:senedsa_config].nil?
-          rescue Psych::SyntaxError => e
+          rescue SyntaxError::Psych::SyntaxError => e
             raise ConfigurationError, "syntax error in configuration file #{cfg_file}: #{e.message}"
           rescue Errno::ENOENT, Errno::EACCES => e
            raise ConfigurationError, e.message
@@ -52,6 +52,8 @@ module Senedsa
 
     def initialize(*args)
 
+      @options = {}
+
       case args.size
 
         when 1
@@ -67,7 +69,7 @@ module Senedsa
 
         when 2
           raise InitializationError, "invalid argument types" unless args[0].is_a? String and args[1].is_a? String
-          cfg_options = SendNsca.configure(args[0][:senedsa_config])
+          cfg_options = SendNsca.configure(@options[:senedsa_config])
           hsh_options = { :svc_hostname => args[0], :svc_descr => args[1] }
 
         when 3
@@ -97,6 +99,8 @@ module Senedsa
         else
           raise ArgumentError, "wrong number of arguments"
       end
+      raise StandardError , "foo" # unless @options[:nsca_hostname].nil?
+      puts @options[:nsca_hostname]
       run svc_status, svc_output
     end
 

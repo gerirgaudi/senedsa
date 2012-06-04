@@ -1,5 +1,8 @@
 require 'optparse'
 require 'yaml'
+require 'senedsa/version'
+require 'senedsa/about'
+
 
 module Senedsa
 
@@ -48,10 +51,10 @@ module Senedsa
           opts.separator ""
 
           opts.separator "Send_Nsca options:"
-          opts.on('-T', '--send_nsca-timeout TIMEOUT',   Integer,                "send_nsca connection timeout")                       { |timeout|   @cli_options[:send_nsca_timeout] = timeout }
-          opts.on('-D', '--send_nsca-delim DELIM',       String,                 "send_nsca field delimited")                          { |delim|     @cli_options[:send_nsca_delim] = delim }
-          opts.on('-C', '--send_nsca-config CONFIG',     String,                 "send_nsca configuration file")                       { |config|    @cli_options[:send_nsca_config] = config }
-          opts.on('-B', '--send_nsca-binary BINARY',     String,                 "send_nsca binary path")                              { |binary|    @cli_options[:send_nsca_binary] = binary }
+          opts.on('-T', '--send_nsca_timeout TIMEOUT',   Integer,                "send_nsca connection timeout")                       { |timeout|   @cli_options[:send_nsca_timeout] = timeout }
+          opts.on('-D', '--send_nsca_delim DELIM',       String,                 "send_nsca field delimited")                          { |delim|     @cli_options[:send_nsca_delim] = delim }
+          opts.on('-C', '--send_nsca_config CONFIG',     String,                 "send_nsca configuration file")                       { |config|    @cli_options[:send_nsca_config] = config }
+          opts.on('-B', '--send_nsca_binary BINARY',     String,                 "send_nsca binary path")                              { |binary|    @cli_options[:send_nsca_binary] = binary }
           opts.separator ""
 
           opts.separator "Service options:"
