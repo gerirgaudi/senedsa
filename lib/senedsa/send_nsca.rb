@@ -1,4 +1,5 @@
 require 'open3'
+require 'psych'
 
 module Senedsa
 
@@ -32,9 +33,9 @@ module Senedsa
         unless cfg_file.nil?
           raise ConfigurationError, "unable to read configuration file #{cfg_file}" unless File.readable? cfg_file
           begin
-            cfg_options = YAML.load File.open(cfg_file)
+            cfg_options = Psych.load File.open(cfg_file)
             raise ConfigurationError, "senedsa_config not allowed in configuration file (#{cfg_file})" unless cfg_options[:senedsa_config].nil?
-          rescue SyntaxError::Psych::SyntaxError => e
+          rescue Psych::SyntaxError => e
             raise ConfigurationError, "syntax error in configuration file #{cfg_file}: #{e.message}"
           rescue Errno::ENOENT, Errno::EACCES => e
            raise ConfigurationError, e.message
