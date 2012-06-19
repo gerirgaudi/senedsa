@@ -1,4 +1,6 @@
 require 'open3'
+require 'psych'
+require 'socket'
 
 module Senedsa
 
@@ -32,9 +34,9 @@ module Senedsa
         unless cfg_file.nil?
           raise ConfigurationError, "unable to read configuration file #{cfg_file}" unless File.readable? cfg_file
           begin
-            cfg_options = YAML.load File.open(cfg_file)
+            cfg_options = Psych.load File.open(cfg_file)
             raise ConfigurationError, "senedsa_config not allowed in configuration file (#{cfg_file})" unless cfg_options[:senedsa_config].nil?
-          rescue SyntaxError::Psych::SyntaxError => e
+          rescue Psych::SyntaxError => e
             raise ConfigurationError, "syntax error in configuration file #{cfg_file}: #{e.message}"
           rescue Errno::ENOENT, Errno::EACCES => e
            raise ConfigurationError, e.message
@@ -58,10 +60,12 @@ module Senedsa
 
         when 1
           if args[0].is_a? String
-            cfg_options = SendNsca.configure(args[0])
+            cfg_file = args[0].nil? ? nil : args[0]
+            cfg_options = cfg_file.nil? ? {} : SendNsca.configure(cfg_file)
             hsh_options = {}
           elsif args[0].is_a? Hash
-            cfg_options = SendNsca.configure(args[0][:senedsa_config])
+            cfg_file = args[0][:senedsa_config].nil? ? nil : args[0][:senedsa_config]
+            cfg_options = cfg_file.nil? ? {} : SendNsca.configure(cfg_file)
             hsh_options = args[0]
           else
             raise InitializationError, "invalid argument types"
@@ -81,6 +85,7 @@ module Senedsa
           raise ArgumentError, "wrong number of arguments"
       end
       @options = SendNsca.defaults.merge(cfg_options).merge(hsh_options)
+      @options[:svc_hostname] = Socket.gethostname if @options[:svc_hostname].nil?
     end
 
     def send(*args)
@@ -99,8 +104,6 @@ module Senedsa
         else
           raise ArgumentError, "wrong number of arguments"
       end
-      raise StandardError , "foo" # unless @options[:nsca_hostname].nil?
-      puts @options[:nsca_hostname]
       run svc_status, svc_output
     end
 
@@ -109,10 +112,14 @@ module Senedsa
       define_method(attr.to_s + '=') { |value| @options[attr.to_sym] = value }
     end
 
+    def inspect
+      @options
+    end
+
     private
 
       def command
-        c = "#{send_nsca_binary} -H #{nsca_hostname} -p #{nsca_port} -t #{send_nsca_timeout} -d '#{send_nsca_delim}'"
+        c = "#{send_nsca_binary} -H #{nsca_hostname} -p #{nsca_port} -to #{send_nsca_timeout} -d '#{send_nsca_delim}'"
         c << " -c #{send_nsca_config}" unless send_nsca_config.nil?
         c
       end
