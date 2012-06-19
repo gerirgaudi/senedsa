@@ -111,7 +111,7 @@ module Senedsa
     private
 
       def command
-        c = "#{send_nsca_binary} -H #{nsca_hostname} -p #{nsca_port} -t #{send_nsca_timeout} -d '#{send_nsca_delim}'"
+        c = "#{send_nsca_binary} -H #{nsca_hostname} -p #{nsca_port} -to #{send_nsca_timeout} -d '#{send_nsca_delim}'"
         c << " -c #{send_nsca_config}" unless send_nsca_config.nil?
         c
       end
