@@ -128,7 +128,7 @@ module Senedsa
         begin
           Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
             stdin.write("%s\n" % [svc_hostname,svc_descr,STATUS[status],svc_output].join(send_nsca_delim))
-            $stdout.write stdout.gets
+            $stdout.write stdout.gets if STDIN.tty?
             raise SendNscaError, stderr.gets.chomp unless wait_thr.value.exitstatus == 0
           end
         rescue Errno::ENOENT, Errno::EACCES => e
