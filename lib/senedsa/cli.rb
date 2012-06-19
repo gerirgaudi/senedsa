@@ -1,5 +1,4 @@
 require 'optparse'
-require 'yaml'
 require 'senedsa/version'
 require 'senedsa/about'
 

@@ -1,3 +1,3 @@
 module Senedsa
-  VERSION = '0.0.8'
+  VERSION = '0.2.4'
 end
