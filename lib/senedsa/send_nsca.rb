@@ -1,5 +1,6 @@
 require 'open3'
 require 'psych'
+require 'socket'
 
 module Senedsa
 
@@ -59,10 +60,12 @@ module Senedsa
 
         when 1
           if args[0].is_a? String
-            cfg_options = SendNsca.configure(args[0])
+            cfg_file = args[0].nil? ? nil : args[0]
+            cfg_options = cfg_file.nil? ? {} : SendNsca.configure(cfg_file)
             hsh_options = {}
           elsif args[0].is_a? Hash
-            cfg_options = SendNsca.configure(args[0][:senedsa_config])
+            cfg_file = args[0][:senedsa_config].nil? ? nil : args[0][:senedsa_config]
+            cfg_options = cfg_file.nil? ? {} : SendNsca.configure(cfg_file)
             hsh_options = args[0]
           else
             raise InitializationError, "invalid argument types"
@@ -82,6 +85,7 @@ module Senedsa
           raise ArgumentError, "wrong number of arguments"
       end
       @options = SendNsca.defaults.merge(cfg_options).merge(hsh_options)
+      @options[:svc_hostname] = Socket.gethostname if @options[:svc_hostname].nil?
     end
 
     def send(*args)
@@ -106,6 +110,10 @@ module Senedsa
     SendNsca.defaults.keys.each do |attr|
       define_method(attr.to_s) { @options[attr.to_sym] }
       define_method(attr.to_s + '=') { |value| @options[attr.to_sym] = value }
+    end
+
+    def inspect
+      @options
     end
 
     private
