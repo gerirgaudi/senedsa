@@ -100,8 +100,6 @@ module Senedsa
         else
           raise ArgumentError, "wrong number of arguments"
       end
-      raise StandardError , "foo" # unless @options[:nsca_hostname].nil?
-      puts @options[:nsca_hostname]
       run svc_status, svc_output
     end
 
