@@ -127,7 +127,9 @@ module Senedsa
       def run(status,svc_output)
         begin
           Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
-            stdin.write("%s\n" % [svc_hostname,svc_descr,STATUS[status],svc_output].join(send_nsca_delim))
+            payload = "%s" % [svc_hostname,svc_descr,STATUS[svc_status],svc_output].join(send_nsca_delim)
+            stdin.write("%s\n" % [payload])
+            stdin.close
             $stdout.write stdout.gets if STDIN.tty?
             raise SendNscaError, stderr.gets.chomp unless wait_thr.value.exitstatus == 0
           end
