@@ -104,6 +104,10 @@ module Senedsa
         else
           raise ArgumentError, "wrong number of arguments"
       end
+      @options.keys do |option|
+        next if option == :config
+        raise ArgumentError, "missing send_nsca option #{option}" if @options[option.nil].nil?
+      end
       run svc_status, svc_output
     end
 
