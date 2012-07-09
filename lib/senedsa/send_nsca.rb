@@ -45,8 +45,6 @@ module Senedsa
         cfg_options
       end
 
-    attr_accessor :send_nsca, :nsca
-
     class Error < StandardError; end
     class SendNscaError < Error; end
     class ConfigurationError < SendNscaError; end
@@ -90,6 +88,9 @@ module Senedsa
 
     def send(*args)
 
+      svc_status = nil
+      svc_output = nil
+
       case args.size
         when 0
           # svc_status and svc_output should be set on @options
@@ -104,10 +105,12 @@ module Senedsa
         else
           raise ArgumentError, "wrong number of arguments"
       end
-      @options.keys do |option|
-        next if option == :config
-        raise ArgumentError, "missing send_nsca option #{option}" if @options[option.nil].nil?
+      @options.each_key do |option|
+        next if [:send_nsca_config, :svc_status, :svc_output].include? option
+        raise ArgumentError, "missing send_nsca option #{option}" if @options[option].nil?
       end
+      raise ArgumentError, "missing send_nsca svc_status" if svc_status.nil?
+      raise ArgumentError, "missing send_nsca svc_output" if svc_output.nil?
       run svc_status, svc_output
     end
 
@@ -128,7 +131,7 @@ module Senedsa
         c
       end
 
-      def run(status,svc_output)
+      def run(svc_status,svc_output)
         begin
           Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
             payload = "%s" % [svc_hostname,svc_descr,STATUS[svc_status],svc_output].join(send_nsca_delim)
