@@ -66,11 +66,11 @@ module Senedsa
           opts.on('-d', '--debug',                                               "Enable debug mode")                                  { @cli_options[:debug] = true}
           opts.on('-a', '--about',                                               "Display #{ID} information")                          { output_message ABOUT, 0 }
           opts.on('-V', '--version',                                             "Display #{ID} version")                              { output_message VERSION, 0 }
-          opts.on_tail('--help',                                                 "Show this message")                                  { output_message opts 0 }
-
-          output_message opts, 0 if @arguments.size == 0
+          opts.on_tail('--help',                                                 "Show this message")                                  { @cli_options[:HELP] = true }
 
           opts.parse!(@arguments)
+          output_message opts, 0 if @arguments.size == 0 or @cli_options[:HELP]
+
         rescue => e
           output_message e.message, 1
         end
