@@ -16,7 +16,7 @@ module Senedsa
     @defaults = {
         :send_nsca_binary => 'send_nsca',
         :send_nsca_config => nil,
-        :send_nsca_delim => '\t',
+        :send_nsca_delim => "\t",
         :send_nsca_timeout => 10,
         :nsca_hostname => nil,
         :nsca_port => 5667,
@@ -95,7 +95,7 @@ module Senedsa
         when 0
           # svc_status and svc_output should be set on @options
           raise ArgumentError, "svc_status or svc_output not set" if @options[:svc_status].nil? or @options[:svc_output].nil?
-          svc_status = @options[:status]
+          svc_status = @options[:svc_status]
           svc_output = @options[:svc_output]
         when 2
           raise ArgumentError, "invalid svc_status" unless args[0].is_a? Symbol and STATUS.keys.include?(args[0])
@@ -109,9 +109,9 @@ module Senedsa
         next if [:send_nsca_config, :svc_status, :svc_output].include? option
         raise ArgumentError, "missing send_nsca option #{option}" if @options[option].nil?
       end
-      raise ArgumentError, "missing send_nsca svc_status" if svc_status.nil?
-      raise ArgumentError, "missing send_nsca svc_output" if svc_output.nil?
-      run svc_status, svc_output
+      raise ArgumentError, "missing send_nsca svc_status" if @options[:svc_status].nil?
+      raise ArgumentError, "missing send_nsca svc_output" if @options[:svc_output].nil?
+      run @options[:svc_status], @options[:svc_output]
     end
 
     SendNsca.defaults.keys.each do |attr|
@@ -134,8 +134,8 @@ module Senedsa
       def run(svc_status,svc_output)
         begin
           Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
-            payload = "%s" % [svc_hostname,svc_descr,STATUS[svc_status],svc_output].join(send_nsca_delim)
-            stdin.write("%s\n" % [payload])
+            payload = "%s\n" % [svc_hostname,svc_descr,STATUS[svc_status],svc_output].join(send_nsca_delim)
+            stdin.write(payload)
             stdin.close
             $stdout.write stdout.gets if STDIN.tty?
             raise SendNscaError, stderr.gets.chomp unless wait_thr.value.exitstatus == 0
