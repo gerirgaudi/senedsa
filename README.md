@@ -1,10 +1,12 @@
-# OVERVIEW
+# Senedsa [![Gem Version](https://badge.fury.io/rb/senedsa.png)](http://badge.fury.io/rb/senedsa)
+
+## OVERVIEW
 
 *Senedsa* is a small utility and library that wraps around the Nagios `send_nsca` utility, which must be available in your system. *Senedsa* assumes by default that `send_nsca` is available in your PATH and that `send_nsca`'s configuration file is in its default location. Both of these items can be overriden via options in the configuration file or in the command line.
 
 *Senedsa* is available as a Rubygem: [gem install senedsa](https://rubygems.org/gems/senedsa "Senedsa")
 
-# SYNOPSIS
+## SYNOPSIS
 
     senedsa [options] svc_output
 
@@ -40,7 +42,7 @@ Options `--nsca_hostname`, `--svc_hostname`, `--svc_descr` and `--svc_status` ar
 
  Finally, `svc_output` need not be quoted: anything passed as an argument is considered part of `svc_output`.
 
-# CONFIGURATION
+## CONFIGURATION
 
 The priority of options is: command line options `>` configuration file options `>` default options
 
@@ -66,7 +68,7 @@ Then, the script would invoke `senedsa` as follows:
 
 	senedsa -c /etc/senedsa/script_service -s ok service is doing great
 
-# LIBRARY
+## LIBRARY
 
 To use *Senedsa* as a library, simply:
 
@@ -82,7 +84,7 @@ To use *Senedsa* as a library, simply:
       # rescue logic
     end
     
-## CONSTRUCTORS
+### CONSTRUCTORS
 
 *Senedsa* accepts four different constructors, aimed at fitting different situations.
 
@@ -100,7 +102,7 @@ Where:
 
 An instance does not need all options defined until the `send` method is invoked.
 
-## DEFAULTS
+### DEFAULTS
 
 `Senedsa` has sensible defaults for the following options, mostly following `send_nsca`'s documented defaults:
 
@@ -111,7 +113,7 @@ An instance does not need all options defined until the `send` method is invoked
 
 It is therefore not necessary to set these if your environment doesn't need them changed.
 
-## SETTERS, GETTERS and CONFIGURATION FILES
+### SETTERS, GETTERS and CONFIGURATION FILES
 
 All options are settable (and gettable) through attribute methods. For instance:
 
